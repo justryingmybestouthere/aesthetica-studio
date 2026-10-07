@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Aesthetica Studio — a browser-based creative design tool for CSS art, SVG, moodboards, and digital experimentation."
+    />
+    <title>Aesthetica Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="theme-dark">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-mark">✦</div>
+          <div class="brand-text">AESTHETICA STUDIO</div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="ghost-btn" data-action="new-project">New</button>
+          <button class="ghost-btn" data-action="save-project">Save</button>
+          <button class="ghost-btn" data-action="export-project">Export</button>
+          <button class="primary-btn" data-action="toggle-ai">AI</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="left-panel panel">
+          <section class="panel-group">
+            <div class="group-header">ELEMENTS</div>
+            <div id="element-library" class="library-grid"></div>
+          </section>
+
+          <section class="panel-group layers">
+            <div class="group-header">LAYERS</div>
+            <ul id="layer-list" class="layer-list"></ul>
+          </section>
+        </aside>
+
+        <section class="center-panel">
+          <div class="canvas-toolbar">
+            <div class="tool-group">
+              <button class="tool-btn" data-action="toggle-preview">Preview</button>
+              <button class="tool-btn" data-action="toggle-code-panel">Code</button>
+              <button class="tool-btn" data-action="duplicate-element">Duplicate</button>
+              <button class="tool-btn" data-action="delete-selected">Delete</button>
+            </div>
+            <div class="tool-group right-tools">
+              <label>
+                Canvas
+                <select id="canvas-size-select">
+                  <option value="1600x900">Web</option>
+                  <option value="1080x1920">Phone</option>
+                  <option value="1080x1080">Square</option>
+                  <option value="1366x768">Desktop</option>
+                  <option value="1080x1350">Poster</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div id="canvas-shell" class="canvas-shell">
+            <div id="canvas" aria-label="Design canvas"></div>
+          </div>
+        </section>
+
+        <aside class="right-panel panel">
+          <section class="panel-group">
+            <div class="group-header">PROPERTIES</div>
+            <div id="properties-panel" class="properties-panel"></div>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="statusbar">
+        <div class="status-left">
+          <span id="status-label">Ready</span>
+        </div>
+        <div class="status-right">
+          <span>Scene</span>
+          <span>Zoom 100%</span>
+          <span>Auto-save</span>
+        </div>
+      </footer>
+
+      <aside id="ai-drawer" class="ai-drawer closed" aria-label="Aesthetica AI panel">
+        <div class="ai-header">
+          <div>✦ AESTHETICA AI</div>
+          <button class="icon-btn" data-action="toggle-ai">×</button>
+        </div>
+
+        <div class="ai-conversation" id="ai-conversation">
+          <div class="ai-message system">
+            I can help refine your layout, styling, palette, SVG, and motion. Ask me to make a card glassy, dreamy, or more playable.
+          </div>
+        </div>
+
+        <div class="ai-input-row">
+          <input id="ai-input" type="text" placeholder="Ask anything..." />
+          <button class="primary-btn" id="ai-submit">Send</button>
+        </div>
+
+        <div class="ai-actions">
+          <button class="ghost-btn" id="ai-preview-btn">Preview</button>
+          <button class="primary-btn" id="ai-apply-btn">Apply</button>
+          <button class="ghost-btn" id="ai-cancel-btn">Cancel</button>
+        </div>
+      </aside>
+
+      <aside id="code-panel" class="code-panel hidden" aria-label="Code panel">
+        <div class="code-header">
+          <div>Workspace</div>
+          <button class="icon-btn" data-action="toggle-code-panel">×</button>
+        </div>
+        <div class="code-tabs">
+          <button class="tab-btn active" data-tab="html">HTML</button>
+          <button class="tab-btn" data-tab="css">CSS</button>
+          <button class="tab-btn" data-tab="json">Data</button>
+        </div>
+        <textarea id="code-editor" spellcheck="false"></textarea>
+      </aside>
+
+      <div id="toast" class="toast" aria-live="polite"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

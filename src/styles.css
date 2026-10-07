@@ -1,0 +1,893 @@
+const STORAGE_KEY = 'aesthetica-studio-project';
+
+const ELEMENT_LIBRARY = [
+  { type: 'text', label: 'Text', icon: 'T' },
+  { type: 'card', label: 'Card', icon: '▣' },
+  { type: 'button', label: 'Button', icon: '◎' },
+  { type: 'shape', label: 'Shape', icon: '◉' },
+  { type: 'image', label: 'Image', icon: '▤' },
+  { type: 'note', label: 'Note', icon: '✎' },
+  { type: 'svg', label: 'SVG', icon: '◇' },
+  { type: 'container', label: 'Container', icon: '▭' },
+];
+
+const DEFAULT_THEME = {
+  dark: {
+    background: '#090d1a',
+    panel: '#101827',
+    panelAlt: '#131d2f',
+    border: 'rgba(255,255,255,0.12)',
+    text: '#edf5ff',
+    muted: '#aabbd1',
+    accent: '#f796c9',
+    glow: '#8ae5ff',
+  },
+  dream: {
+    background: '#f8eaf3',
+    panel: '#fffdfd',
+    panelAlt: '#f9ebf4',
+    border: 'rgba(167, 122, 145, 0.2)',
+    text: '#2d1d2f',
+    muted: '#765a6b',
+    accent: '#ff8db0',
+    glow: '#af91ff',
+  },
+};
+
+const state = {
+  project: loadProject(),
+  selectedId: null,
+  activeTab: 'html',
+  aiDraft: null,
+  previewMode: false,
+  theme: 'dark',
+};
+
+function createBaseProject() {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Dreamy Profile',
+    canvas: { width: 1600, height: 900, mode: 'web' },
+    elements: [
+      {
+        id: crypto.randomUUID(),
+        type: 'card',
+        name: 'Profile Card',
+        x: 120,
+        y: 100,
+        width: 460,
+        height: 620,
+        rotation: 0,
+        opacity: 1,
+        zIndex: 10,
+        locked: false,
+        visible: true,
+        style: {
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,194,219,0.15))',
+          border: '1px solid rgba(255,255,255,0.36)',
+          borderRadius: 30,
+          boxShadow: '0 20px 50px rgba(62, 32, 74, 0.32)',
+          backdropFilter: 'blur(22px)',
+          color: '#fdf7ff',
+        },
+      },
+      {
+        id: crypto.randomUUID(),
+        type: 'text',
+        name: 'Aesthetica',
+        x: 175,
+        y: 155,
+        width: 290,
+        height: 90,
+        rotation: 0,
+        opacity: 1,
+        zIndex: 20,
+        locked: false,
+        visible: true,
+        content: 'Aesthetica',
+        style: {
+          fontSize: 44,
+          fontWeight: 800,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: '#fff9ff',
+          fontFamily: 'Inter, sans-serif',
+        },
+      },
+      {
+        id: crypto.randomUUID(),
+        type: 'text',
+        name: 'Subtitle',
+        x: 178,
+        y: 246,
+        width: 200,
+        height: 48,
+        rotation: 0,
+        opacity: 1,
+        zIndex: 21,
+        locked: false,
+        visible: true,
+        content: 'Dreamy interfaces for curious minds',
+        style: {
+          fontSize: 16,
+          letterSpacing: '0.08em',
+          color: '#f8dce9',
+          fontFamily: 'Inter, sans-serif',
+          lineHeight: 1.6,
+        },
+      },
+      {
+        id: crypto.randomUUID(),
+        type: 'button',
+        name: 'Primary CTA',
+        x: 178,
+        y: 360,
+        width: 180,
+        height: 54,
+        rotation: 0,
+        opacity: 1,
+        zIndex: 20,
+        locked: false,
+        visible: true,
+        content: 'Explore',
+        style: {
+          background: 'linear-gradient(135deg, #f8c3db, #a7d8ff)',
+          borderRadius: 18,
+          border: '1px solid rgba(255,255,255,0.5)',
+          boxShadow: '0 18px 48px rgba(255,153,204,0.38)',
+          color: '#241522',
+          fontWeight: 800,
+          fontFamily: 'Inter, sans-serif',
+        },
+      },
+      {
+        id: crypto.randomUUID(),
+        type: 'shape',
+        name: 'Glow Orb',
+        x: 920,
+        y: 160,
+        width: 300,
+        height: 300,
+        rotation: 0,
+        opacity: 0.9,
+        zIndex: 5,
+        locked: false,
+        visible: true,
+        style: {
+          borderRadius: '50%',
+          background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(147, 187, 255, 0.58) 25%, rgba(255, 157, 195, 0.68) 55%, rgba(32, 16, 48, 0.1) 100%)',
+          boxShadow: '0 50px 100px rgba(157, 153, 255, 0.45)',
+        },
+      },
+      {
+        id: crypto.randomUUID(),
+        type: 'container',
+        name: 'Glass Panel',
+        x: 760,
+        y: 520,
+        width: 540,
+        height: 180,
+        rotation: 0,
+        opacity: 1,
+        zIndex: 8,
+        locked: false,
+        visible: true,
+        style: {
+          background: 'rgba(11, 17, 28, 0.28)',
+          border: '1px solid rgba(255,255,255,0.22)',
+          borderRadius: 28,
+          boxShadow: '0 18px 50px rgba(18, 23, 38, 0.38)',
+          backdropFilter: 'blur(18px)',
+        },
+      },
+    ],
+    theme: 'dark',
+  };
+}
+
+function loadProject() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return createBaseProject();
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.elements) return parsed;
+  } catch (error) {
+    console.warn('Could not parse saved project.', error);
+  }
+
+  return createBaseProject();
+}
+
+function saveProject() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.project));
+  setStatus('Project saved locally');
+  showToast('Saved');
+}
+
+function setStatus(message) {
+  document.getElementById('status-label').textContent = message;
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function adjustCanvasSize(newSize) {
+  const [width, height] = newSize.split('x').map(Number);
+  state.project.canvas.width = width;
+  state.project.canvas.height = height;
+  renderCanvas();
+  renderCodePanel();
+  setStatus(`Canvas resized to ${width} × ${height}`);
+}
+
+function createElement(type, options = {}) {
+  const element = {
+    id: crypto.randomUUID(),
+    type,
+    name: `${type[0].toUpperCase()}${type.slice(1)} Element`,
+    x: options.x ?? 90,
+    y: options.y ?? 90,
+    width: options.width ?? 220,
+    height: options.height ?? 120,
+    rotation: 0,
+    opacity: 1,
+    zIndex: state.project.elements.length + 1,
+    locked: false,
+    visible: true,
+    content: options.content ?? 'New element',
+    style: {
+      background: options.background ?? 'rgba(255,255,255,0.1)',
+      border: options.border ?? '1px solid rgba(255,255,255,0.2)',
+      borderRadius: options.radius ?? 18,
+      color: options.color ?? '#f6f9ff',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: options.fontSize ?? 18,
+      boxShadow: options.shadow ?? '0 14px 28px rgba(13, 18, 30, 0.18)',
+    },
+  };
+
+  if (type === 'text') {
+    element.content = options.content ?? 'Type here';
+    element.style.fontSize = options.fontSize ?? 28;
+    element.style.fontWeight = options.fontWeight ?? 700;
+  }
+
+  if (type === 'button') {
+    element.content = options.content ?? 'Button';
+    element.style.background = options.background ?? 'linear-gradient(135deg, #f7c5dc, #87cbff)';
+  }
+
+  if (type === 'shape') {
+    element.width = options.width ?? 220;
+    element.height = options.height ?? 220;
+    element.style.background = options.background ?? 'radial-gradient(circle, rgba(255,255,255,1), rgba(236,160,212,0.75) 32%, rgba(113,177,255,0.5) 100%)';
+    element.style.borderRadius = '50%';
+  }
+
+  if (type === 'card') {
+    element.style.background = options.background ?? 'linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,161,210,0.12))';
+  }
+
+  if (type === 'image') {
+    element.style.background = options.background ?? 'linear-gradient(135deg, rgba(148,180,255,0.5), rgba(255,90,160,0.2))';
+  }
+
+  if (type === 'svg') {
+    element.content = options.content ?? '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="72" fill="rgba(255,255,255,0.35)"/></svg>';
+  }
+
+  return element;
+}
+
+function addElement(type) {
+  const newElement = createElement(type, {
+    x: 120 + Math.random() * 140,
+    y: 120 + Math.random() * 120,
+  });
+  state.project.elements.push(newElement);
+  state.selectedId = newElement.id;
+  render();
+  setStatus(`${type} added`);
+}
+
+function getSelectedElement() {
+  if (!state.selectedId) return null;
+  return state.project.elements.find((element) => element.id === state.selectedId) || null;
+}
+
+function renderLibrary() {
+  const el = document.getElementById('element-library');
+  el.innerHTML = '';
+
+  ELEMENT_LIBRARY.forEach((item) => {
+    const button = document.createElement('button');
+    button.className = 'library-item';
+    button.textContent = `${item.icon} ${item.label}`;
+    button.addEventListener('click', () => addElement(item.type));
+    el.appendChild(button);
+  });
+}
+
+function renderLayers() {
+  const layerList = document.getElementById('layer-list');
+  layerList.innerHTML = '';
+
+  state.project.elements
+    .slice()
+    .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+    .forEach((element) => {
+      const row = document.createElement('li');
+      row.className = 'layer-row' + (element.id === state.selectedId ? ' selected' : '');
+
+      const visibility = document.createElement('button');
+      visibility.className = 'layer-toggle';
+      visibility.textContent = element.visible ? '◉' : '◌';
+      visibility.title = element.visible ? 'Hide layer' : 'Show layer';
+      visibility.addEventListener('click', () => {
+        element.visible = !element.visible;
+        render();
+      });
+
+      const label = document.createElement('button');
+      label.className = 'layer-label';
+      label.textContent = element.name;
+      label.addEventListener('click', () => {
+        state.selectedId = element.id;
+        render();
+      });
+
+      row.append(visibility, label);
+      layerList.appendChild(row);
+    });
+}
+
+function renderProperties() {
+  const properties = document.getElementById('properties-panel');
+  const selected = getSelectedElement();
+
+  if (!selected) {
+    properties.innerHTML = '<div class="empty-state">Select an element to edit it.</div>';
+    return;
+  }
+
+  const rows = [
+    buildNumberField('X', 'x', selected.x),
+    buildNumberField('Y', 'y', selected.y),
+    buildNumberField('W', 'width', selected.width),
+    buildNumberField('H', 'height', selected.height),
+    buildNumberField('Rotation', 'rotation', selected.rotation),
+    buildNumberField('Opacity', 'opacity', selected.opacity, 0.1, 1, 0.01),
+  ];
+
+  properties.innerHTML = rows.join('');
+
+  properties.querySelectorAll('input').forEach((input) => {
+    input.addEventListener('input', (event) => {
+      const key = event.target.dataset.key;
+      let value = Number(event.target.value);
+      if (key === 'opacity') value = Number(value);
+      if (key === 'rotation') value = Number(value);
+      if (key === 'x' || key === 'y' || key === 'width' || key === 'height') value = Number(value);
+      selected[key] = value;
+      renderCanvas();
+      renderLayers();
+      renderCodePanel();
+    });
+  });
+}
+
+function buildNumberField(label, key, value, min = 0, max = 5000, step = 1) {
+  const normalized = key === 'opacity' ? Number(value).toFixed(2) : Math.round(value);
+  return `
+    <label class="property-row">
+      <span>${label}</span>
+      <input type="number" min="${min}" max="${max}" step="${step}" value="${normalized}" data-key="${key}" />
+    </label>
+  `;
+}
+
+function renderCanvas() {
+  const canvas = document.getElementById('canvas');
+  canvas.style.width = `${state.project.canvas.width}px`;
+  canvas.style.height = `${state.project.canvas.height}px`;
+  canvas.innerHTML = '';
+
+  const sorted = state.project.elements
+    .slice()
+    .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+  sorted.forEach((element) => {
+    if (!element.visible) return;
+
+    const el = document.createElement('div');
+    el.className = `canvas-element type-${element.type}` + (element.id === state.selectedId ? ' selected' : '');
+    el.dataset.id = element.id;
+    el.style.left = `${element.x}px`;
+    el.style.top = `${element.y}px`;
+    el.style.width = `${element.width}px`;
+    el.style.height = `${element.height}px`;
+    el.style.opacity = element.opacity;
+    el.style.transform = `rotate(${element.rotation}deg)`;
+    el.style.zIndex = element.zIndex;
+    el.style.background = element.style.background || 'transparent';
+    el.style.border = element.style.border || 'none';
+    el.style.borderRadius = element.style.borderRadius || '0';
+    el.style.boxShadow = element.style.boxShadow || 'none';
+    el.style.backdropFilter = element.style.backdropFilter || 'none';
+    el.style.color = element.style.color || '#fff';
+    el.style.fontFamily = element.style.fontFamily || 'Inter, sans-serif';
+    el.style.fontSize = element.style.fontSize || '16px';
+    el.style.fontWeight = element.style.fontWeight || 600;
+    el.style.letterSpacing = element.style.letterSpacing || '0';
+    el.style.lineHeight = element.style.lineHeight || '1.4';
+    el.style.textTransform = element.style.textTransform || 'none';
+
+    if (element.type === 'text' || element.type === 'button') {
+      const text = document.createElement('div');
+      text.className = 'element-text';
+      text.textContent = element.content || 'Text';
+      el.appendChild(text);
+    }
+
+    if (element.type === 'svg') {
+      const svgWrap = document.createElement('div');
+      svgWrap.className = 'svg-wrap';
+      svgWrap.innerHTML = element.content || '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="62" fill="rgba(255,255,255,0.38)"/></svg>';
+      el.appendChild(svgWrap);
+    }
+
+    if (element.type === 'image') {
+      const art = document.createElement('div');
+      art.className = 'image-art';
+      art.style.background = 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8), rgba(127,146,255,0.45) 30%, rgba(14,18,31,0.2) 100%)';
+      el.appendChild(art);
+    }
+
+    if (element.type === 'shape') {
+      el.classList.add('shape-element');
+      el.style.borderRadius = element.style.borderRadius || '50%';
+    }
+
+    if (element.type === 'container' || element.type === 'card') {
+      const inner = document.createElement('div');
+      inner.className = 'card-inner';
+      inner.textContent = element.name;
+      el.appendChild(inner);
+    }
+
+    const handleMarkup = `
+      <span class="resize-handle handle-nw" data-handle="nw"></span>
+      <span class="resize-handle handle-ne" data-handle="ne"></span>
+      <span class="resize-handle handle-se" data-handle="se"></span>
+      <span class="resize-handle handle-sw" data-handle="sw"></span>
+    `;
+
+    if (element.id === state.selectedId) {
+      const selectionBox = document.createElement('div');
+      selectionBox.className = 'selection-box';
+      selectionBox.style.left = `${element.x}px`;
+      selectionBox.style.top = `${element.y}px`;
+      selectionBox.style.width = `${element.width}px`;
+      selectionBox.style.height = `${element.height}px`;
+      selectionBox.style.transform = `rotate(${element.rotation}deg)`;
+      selectionBox.innerHTML = handleMarkup;
+      canvas.appendChild(selectionBox);
+    }
+
+    canvas.appendChild(el);
+  });
+
+  bindCanvasEvents();
+  renderSelectionState();
+}
+
+function renderSelectionState() {
+  const selected = getSelectedElement();
+  const canvas = document.getElementById('canvas');
+  if (!selected) return;
+
+  const selectionBox = canvas.querySelector('.selection-box');
+  if (selectionBox) {
+    selectionBox.style.left = `${selected.x}px`;
+    selectionBox.style.top = `${selected.y}px`;
+    selectionBox.style.width = `${selected.width}px`;
+    selectionBox.style.height = `${selected.height}px`;
+    selectionBox.style.transform = `rotate(${selected.rotation}deg)`;
+  }
+}
+
+function bindCanvasEvents() {
+  const canvas = document.getElementById('canvas');
+  canvas.querySelectorAll('.canvas-element').forEach((elementNode) => {
+    elementNode.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+      state.selectedId = elementNode.dataset.id;
+      render();
+      const rect = canvas.getBoundingClientRect();
+      const selected = getSelectedElement();
+      state.drag = {
+        type: 'move',
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: selected.x,
+        originY: selected.y,
+      };
+    });
+  });
+
+  canvas.querySelectorAll('.selection-box .resize-handle').forEach((handle) => {
+    handle.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+      const selected = getSelectedElement();
+      const handleName = event.target.dataset.handle;
+      state.drag = {
+        type: 'resize',
+        handle: handleName,
+        startX: event.clientX,
+        startY: event.clientY,
+        origin: {
+          x: selected.x,
+          y: selected.y,
+          width: selected.width,
+          height: selected.height,
+        },
+      };
+    });
+  });
+
+  canvas.addEventListener('pointermove', (event) => {
+    if (!state.drag) return;
+    const selected = getSelectedElement();
+    if (!selected) return;
+
+    if (state.drag.type === 'move') {
+      const dx = event.clientX - state.drag.startX;
+      const dy = event.clientY - state.drag.startY;
+      selected.x = Math.max(0, state.drag.originX + dx);
+      selected.y = Math.max(0, state.drag.originY + dy);
+    }
+
+    if (state.drag.type === 'resize') {
+      const dx = event.clientX - state.drag.startX;
+      const dy = event.clientY - state.drag.startY;
+      const { origin } = state.drag;
+      const handle = state.drag.handle;
+
+      let nextX = origin.x;
+      let nextY = origin.y;
+      let nextWidth = origin.width;
+      let nextHeight = origin.height;
+
+      if (handle.includes('e')) nextWidth = Math.max(40, origin.width + dx);
+      if (handle.includes('s')) nextHeight = Math.max(40, origin.height + dy);
+      if (handle.includes('w')) {
+        const adjusted = origin.width - dx;
+        nextWidth = Math.max(40, adjusted);
+        nextX = origin.x + (origin.width - nextWidth);
+      }
+      if (handle.includes('n')) {
+        const adjusted = origin.height - dy;
+        nextHeight = Math.max(40, adjusted);
+        nextY = origin.y + (origin.height - nextHeight);
+      }
+
+      selected.x = nextX;
+      selected.y = nextY;
+      selected.width = nextWidth;
+      selected.height = nextHeight;
+    }
+
+    renderCanvas();
+    renderProperties();
+    renderLayers();
+    renderCodePanel();
+  });
+
+  window.addEventListener('pointerup', () => {
+    state.drag = null;
+    saveProject();
+  });
+}
+
+function duplicateSelected() {
+  const selected = getSelectedElement();
+  if (!selected) return;
+
+  const clone = JSON.parse(JSON.stringify(selected));
+  clone.id = crypto.randomUUID();
+  clone.x += 36;
+  clone.y += 36;
+  clone.name = `${clone.name} Copy`;
+  state.project.elements.push(clone);
+  state.selectedId = clone.id;
+  render();
+  setStatus('Element duplicated');
+}
+
+function deleteSelected() {
+  if (!state.selectedId) return;
+  state.project.elements = state.project.elements.filter((element) => element.id !== state.selectedId);
+  state.selectedId = null;
+  render();
+  setStatus('Element deleted');
+}
+
+function renderCodePanel() {
+  const output = document.getElementById('code-editor');
+  if (!output) return;
+
+  const html = buildGeneratedMarkup();
+  const css = buildGeneratedCss();
+  const data = JSON.stringify(state.project, null, 2);
+
+  if (state.activeTab === 'html') output.value = html;
+  if (state.activeTab === 'css') output.value = css;
+  if (state.activeTab === 'json') output.value = data;
+}
+
+function buildGeneratedMarkup() {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>${escapeHtml(state.project.name)}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: linear-gradient(135deg, #0a1220, #1d1833 52%, #0a1220);
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        font-family: Inter, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scene" style="position: relative; width: ${state.project.canvas.width}px; height: ${state.project.canvas.height}px; overflow: hidden;">
+      ${state.project.elements
+        .filter((element) => element.visible)
+        .map((element) => {
+          if (element.type === 'text') {
+            return `<div style="position:absolute; left:${element.x}px; top:${element.y}px; width:${element.width}px; height:${element.height}px; transform:rotate(${element.rotation}deg); opacity:${element.opacity}; color:${element.style.color}; font-size:${element.style.fontSize}px; font-family:${element.style.fontFamily}; font-weight:${element.style.fontWeight}; letter-spacing:${element.style.letterSpacing}; text-transform:${element.style.textTransform};">${escapeHtml(element.content)}</div>`;
+          }
+
+          return `<div style="position:absolute; left:${element.x}px; top:${element.y}px; width:${element.width}px; height:${element.height}px; transform:rotate(${element.rotation}deg); opacity:${element.opacity}; background:${element.style.background}; border:${element.style.border}; border-radius:${element.style.borderRadius}; box-shadow:${element.style.boxShadow}; backdrop-filter:${element.style.backdropFilter};"></div>`;
+        })
+        .join('\n')}
+    </div>
+  </body>
+</html>`;
+}
+
+function buildGeneratedCss() {
+  return `:root {
+  --bg: #0d1220;
+  --panel: rgba(255,255,255,0.08);
+  --accent: #f7c9d8;
+  --text: #f0f4ff;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, rgba(255, 190, 214, 0.2), transparent 30%), linear-gradient(135deg, #0d1220, #181b2a 60%, #090d14);
+  color: var(--text);
+  font-family: Inter, sans-serif;
+}
+
+.scene {
+  position: relative;
+  width: ${state.project.canvas.width}px;
+  height: ${state.project.canvas.height}px;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: linear-gradient(135deg, rgba(255, 215, 233, 0.08), rgba(125, 205, 255, 0.08));
+  box-shadow: 0 18px 70px rgba(0,0,0,0.25);
+}`;
+}
+
+function exportProject() {
+  const blob = new Blob([JSON.stringify(state.project, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${state.project.name.toLowerCase().replace(/\s+/g, '-') || 'aesthetica-project'}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast('Project exported');
+}
+
+function updateTheme(themeName) {
+  state.theme = themeName;
+  const app = document.getElementById('app');
+  app.classList.remove('theme-dark', 'theme-dream');
+  app.classList.add(`theme-${themeName}`);
+}
+
+function handleAiPrompt() {
+  const input = document.getElementById('ai-input');
+  const prompt = input.value.trim();
+  if (!prompt) return;
+
+  const conversation = document.getElementById('ai-conversation');
+  const userMessage = document.createElement('div');
+  userMessage.className = 'ai-message user';
+  userMessage.textContent = prompt;
+  conversation.appendChild(userMessage);
+
+  const selected = getSelectedElement();
+  const suggestion = generateAiSuggestion(prompt, selected);
+  state.aiDraft = suggestion;
+
+  const aiMessage = document.createElement('div');
+  aiMessage.className = 'ai-message assistant';
+  aiMessage.textContent = suggestion.summary;
+  conversation.appendChild(aiMessage);
+
+  input.value = '';
+  conversation.scrollTop = conversation.scrollHeight;
+}
+
+function generateAiSuggestion(prompt, selected) {
+  const lower = prompt.toLowerCase();
+  let summary = 'I can make this feel more luminous with a soft glass treatment and a brighter accent palette.';
+  let update = {};
+
+  if (selected) {
+    if (lower.includes('glass') || lower.includes('dreamy') || lower.includes('gloss')) {
+      summary = 'A dreamy glass card with pink gradients, glow, and subtle blur would feel best here.';
+      update = {
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.26), rgba(255,188,219,0.18))',
+        boxShadow: '0 16px 48px rgba(255,150,212,0.28)',
+        border: '1px solid rgba(255,255,255,0.36)',
+        backdropFilter: 'blur(24px)',
+      };
+    } else if (lower.includes('ocean') || lower.includes('sea') || lower.includes('underwater')) {
+      summary = 'I would shift the palette to cool teal, electric blue, and soft violet highlights with layered gradients.';
+      update = {
+        background: 'linear-gradient(150deg, rgba(179,240,255,0.42), rgba(82,148,255,0.44), rgba(14,35,58,0.75))',
+        boxShadow: '0 18px 60px rgba(73, 114, 255, 0.24)',
+      };
+    } else if (lower.includes('neon') || lower.includes('cyber')) {
+      summary = 'This would benefit from a sharper accent palette, a vivid glow, and a precision-contrast shape.';
+      update = {
+        background: 'linear-gradient(135deg, rgba(18, 18, 40, 0.82), rgba(90, 39, 122, 0.76))',
+        boxShadow: '0 0 26px rgba(102, 255, 246, 0.55)',
+        border: '1px solid rgba(102,255,246,0.45)',
+      };
+    }
+  }
+
+  return {
+    summary,
+    update,
+  };
+}
+
+function previewAiDraft() {
+  const selected = getSelectedElement();
+  if (!selected || !state.aiDraft) return;
+  Object.assign(selected.style, state.aiDraft.update);
+  render();
+  setStatus('AI preview applied');
+}
+
+function applyAiDraft() {
+  if (!state.aiDraft) return;
+  previewAiDraft();
+  showToast('AI changes applied');
+}
+
+function cancelAiDraft() {
+  state.aiDraft = null;
+  showToast('AI preview cleared');
+}
+
+function togglePreviewMode() {
+  state.previewMode = !state.previewMode;
+  document.getElementById('app').classList.toggle('preview-mode', state.previewMode);
+  setStatus(state.previewMode ? 'Preview mode enabled' : 'Design mode enabled');
+}
+
+function toggleCodePanel() {
+  const panel = document.getElementById('code-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) renderCodePanel();
+}
+
+function setupEventListeners() {
+  document.querySelectorAll('[data-action]').forEach((button) => {
+    const action = button.dataset.action;
+    button.addEventListener('click', () => {
+      if (action === 'save-project') saveProject();
+      if (action === 'export-project') exportProject();
+      if (action === 'toggle-ai') document.getElementById('ai-drawer').classList.toggle('closed');
+      if (action === 'new-project') {
+        state.project = createBaseProject();
+        state.selectedId = null;
+        render();
+        setStatus('New project created');
+      }
+      if (action === 'duplicate-element') duplicateSelected();
+      if (action === 'delete-selected') deleteSelected();
+      if (action === 'toggle-preview') togglePreviewMode();
+      if (action === 'toggle-code-panel') toggleCodePanel();
+    });
+  });
+
+  document.getElementById('ai-submit').addEventListener('click', handleAiPrompt);
+  document.getElementById('ai-input').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') handleAiPrompt();
+  });
+
+  document.getElementById('ai-preview-btn').addEventListener('click', previewAiDraft);
+  document.getElementById('ai-apply-btn').addEventListener('click', applyAiDraft);
+  document.getElementById('ai-cancel-btn').addEventListener('click', cancelAiDraft);
+
+  document.getElementById('canvas-size-select').addEventListener('change', (event) => {
+    adjustCanvasSize(event.target.value);
+  });
+
+  document.querySelectorAll('.tab-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((tab) => tab.classList.remove('active'));
+      button.classList.add('active');
+      state.activeTab = button.dataset.tab;
+      renderCodePanel();
+    });
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+      event.preventDefault();
+      duplicateSelected();
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      saveProject();
+    }
+
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      deleteSelected();
+    }
+  });
+}
+
+function render() {
+  document.getElementById('canvas-size-select').value = `${state.project.canvas.width}x${state.project.canvas.height}`;
+  renderLibrary();
+  renderLayers();
+  renderCanvas();
+  renderProperties();
+  renderCodePanel();
+  updateTheme(state.project.theme || state.theme);
+}
+
+function initialize() {
+  setupEventListeners();
+  render();
+  setStatus('Studio ready');
+}
+
+initialize();
